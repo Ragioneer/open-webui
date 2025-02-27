@@ -6,9 +6,6 @@ on:
     branches:
       - main  # Runs when code is pushed to the main branch
 
-permissions:
-  contents: write  # ✅ Grants write permissions for creating releases
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -19,9 +16,11 @@ jobs:
       RESOURCE_GROUP: dev-stage
 
     steps:
+      # Step 1: Checkout Repository
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # Step 2: Log in to Azure Container Registry (ACR)
       - name: Log in to ACR
         uses: azure/docker-login@v3
         with:
@@ -29,6 +28,7 @@ jobs:
           username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
           password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
 
+      # Step 3: Build and Push Docker Image
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
         with:
@@ -37,11 +37,13 @@ jobs:
           push: true
           tags: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }}
 
+      # Step 4: Azure Login
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
+          creds: ${{ secrets.AZURE_CREDENTIALS }}   # use this: az ad sp create-for-rbac --name "DevOpenWebUI" --role contributor --scopes /subscriptions/4197028f-8204-489a-bae7-9b3ca6c4371f/resourceGroups/dev-stage --sdk-auth
+       
+      # Step 5: Deploy to Azure Container Apps
       - name: Deploy to Azure Container Apps
         uses: azure/container-app-deploy-action@v1
         with:
@@ -50,27 +52,3 @@ jobs:
           containerAppName: ${{ env.CONTAINER_APP_NAME }}
           environmentVariables: |
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-
-      # ✅ Step: Create GitHub Release (Fix)
-      - name: Create GitHub Release
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.TOKEN }} # Github Token
-          script: |
-            const changelog = `## [0.5.16] - 2025-02-20
-            
-            ### Fixed
-            
-            - **🔍 Web Search Retrieval Restored**: Resolved a critical issue that broke web search retrieval by reverting deduplication changes, ensuring complete and accurate search results once again.`;
-
-            const release = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: `v0.5.16`,
-              name: `v0.5.16`,
-              body: changelog,
-              draft: false,
-              prerelease: false
-            });
-
-            console.log(`Created release ${release.data.html_url}`);
