@@ -1,54 +1,54 @@
-# name: Deploy to Azure Container Apps
+name: Deploy to Azure Container Apps
 
-# on:
-#   workflow_dispatch:
-#   push:
-#     branches:
-#       - main  # Runs when code is pushed to the main branch
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main  # Runs when code is pushed to the main branch
 
-# jobs:
-#   build-and-deploy:
-#     runs-on: ubuntu-latest
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
 
-#     env:
-#       AZURE_CONTAINER_REGISTRY: DevOpenWebUI
-#       CONTAINER_APP_NAME: dev-open-webui
-#       RESOURCE_GROUP: dev-stage
+    env:
+      AZURE_CONTAINER_REGISTRY: DevOpenWebUI
+      CONTAINER_APP_NAME: dev-open-webui
+      RESOURCE_GROUP: dev-stage
 
-#     steps:
-#       # Step 1: Checkout Repository
-#       - name: Checkout Code
-#         uses: actions/checkout@v4
+    steps:
+      # Step 1: Checkout Repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-#       # Step 2: Log in to Azure Container Registry (ACR)
-#       - name: Log in to ACR
-#         uses: azure/docker-login@v3
-#         with:
-#           registry: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io
-#           username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
-#           password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
+      # Step 2: Log in to Azure Container Registry (ACR)
+      - name: Log in to ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io
+          username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
+          password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
 
-#       # Step 3: Build and Push Docker Image
-#       - name: Build and Push Docker Image
-#         uses: docker/build-push-action@v6
-#         with:
-#           context: .
-#           file: ./Dockerfile
-#           push: true
-#           tags: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }}
+      # Step 3: Build and Push Docker Image
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }}
 
-#       # Step 4: Azure Login
-#       - name: Azure Login
-#         uses: azure/login@v2
-#         with:
-#           creds: ${{ secrets.AZURE_CREDENTIALS }}   # use this: az ad sp create-for-rbac --name "DevOpenWebUI" --role contributor --scopes /subscriptions/4197028f-8204-489a-bae7-9b3ca6c4371f/resourceGroups/dev-stage --sdk-auth
-       
-#       # Step 5: Deploy to Azure Container Apps
-#       - name: Deploy to Azure Container Apps
-#         uses: azure/container-app-deploy-action@v1
-#         with:
-#           imageToDeploy: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }}
-#           resourceGroup: ${{ env.RESOURCE_GROUP }}
-#           containerAppName: ${{ env.CONTAINER_APP_NAME }}
-#           environmentVariables: |
-#             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+      # Step 4: Azure Login
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Step 5: Deploy to Azure Container Apps
+      - name: Deploy to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v1  # ✅ Fixed incorrect action name
+        with:
+          imageToDeploy: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }}
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          containerAppName: ${{ env.CONTAINER_APP_NAME }}
+          environmentVariables: |
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
