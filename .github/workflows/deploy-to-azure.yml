@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      # Note: ACR names must be lowercase. If your registry was created as "DevOpenWebUI",
+      # it is normalized to "devopenwebui.azurecr.io".
       AZURE_CONTAINER_REGISTRY: DevOpenWebUI
       CONTAINER_APP_NAME: dev-open-webui
       RESOURCE_GROUP: dev-stage
@@ -22,9 +24,9 @@ jobs:
 
       # Step 2: Log in to Azure Container Registry (ACR)
       - name: Log in to ACR
-        uses: azure/docker-login@v3
+        uses: azure/docker-login@v1
         with:
-          registry: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io
+          login-server: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io
           username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
           password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
 
@@ -41,14 +43,17 @@ jobs:
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}   # use this: az ad sp create-for-rbac --name "DevOpenWebUI" --role contributor --scopes /subscriptions/4197028f-8204-489a-bae7-9b3ca6c4371f/resourceGroups/dev-stage --sdk-auth
-       
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          # Example for creating the service principal:
+          # az ad sp create-for-rbac --name "DevOpenWebUI" --role contributor --scopes /subscriptions/<subscription-id>/resourceGroups/dev-stage --sdk-auth
+
       # Step 5: Deploy to Azure Container Apps
       - name: Deploy to Azure Container Apps
-        uses: azure/container-app-deploy-action@v1
+        uses: azure/cli@v2
         with:
-          imageToDeploy: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }}
-          resourceGroup: ${{ env.RESOURCE_GROUP }}
-          containerAppName: ${{ env.CONTAINER_APP_NAME }}
-          environmentVariables: |
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          inlineScript: |
+            az containerapp update \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }} \
+              --set-env-vars OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
