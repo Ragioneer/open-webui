@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 name: Deploy to Azure Container Apps
 
 on:
@@ -6,14 +5,6 @@ on:
   push:
     branches:
       - main  # Runs when code is pushed to the main branch
-=======
-# name: Deploy to Azure Container Apps
-# on:
-#   workflow_dispatch:
-#   push:
-#     branches:
-#       - main  # Runs when code is pushed to the main branch
->>>>>>> Stashed changes
 
 jobs:
   build-and-deploy:
@@ -31,9 +22,9 @@ jobs:
 
       # Step 2: Log in to Azure Container Registry (ACR)
       - name: Log in to ACR
-        uses: azure/docker-login@v1
+        uses: azure/docker-login@v3
         with:
-          login-server: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io
+          registry: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io
           username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
           password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
 
@@ -50,11 +41,11 @@ jobs:
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
+          creds: ${{ secrets.AZURE_CREDENTIALS }}   # use this: az ad sp create-for-rbac --name "DevOpenWebUI" --role contributor --scopes /subscriptions/4197028f-8204-489a-bae7-9b3ca6c4371f/resourceGroups/dev-stage --sdk-auth
+       
       # Step 5: Deploy to Azure Container Apps
       - name: Deploy to Azure Container Apps
-        uses: azure/container-apps-deploy-action@v1  # ✅ Fixed incorrect action name
+        uses: azure/container-app-deploy-action@v1
         with:
           imageToDeploy: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }}
           resourceGroup: ${{ env.RESOURCE_GROUP }}
