@@ -1,0 +1,48 @@
+name: Trigger auto deployment for dev-open-webui
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ main ]
+    paths:
+    - '**'
+    - '.github/workflows/dev-open-webui-AutoDeployTrigger-595514dd-c6d6-4049-bb7c-965e48462cf0.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.DEVOPENWEBUI_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.DEVOPENWEBUI_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.DEVOPENWEBUI_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          _dockerfilePathKey_: _dockerfilePath_
+          registryUrl: devopenwebui.azurecr.io
+          registryUsername: ${{ secrets.DEVOPENWEBUI_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.DEVOPENWEBUI_REGISTRY_PASSWORD }}
+          containerAppName: dev-open-webui
+          resourceGroup: dev-stage
+          imageToBuild: devopenwebui.azurecr.io/dev-open-webui:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+
