@@ -49,11 +49,9 @@ jobs:
 
       # Step 5: Deploy to Azure Container Apps
       - name: Deploy to Azure Container Apps
-        uses: azure/cli@v2
+        uses: azure/container-apps-deploy-action@v1
         with:
-          inlineScript: |
-            az containerapp update \
-              --name ${{ env.CONTAINER_APP_NAME }} \
-              --resource-group ${{ env.RESOURCE_GROUP }} \
-              --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }} \
-              --set-env-vars OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} 
+          imageToDeploy: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }}
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          containerAppName: ${{ env.CONTAINER_APP_NAME }}
+          environmentVariables: OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
